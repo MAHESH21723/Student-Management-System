@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    {% if demo_mode %}<div class="alert alert-warning text-center rounded-0 mb-0 py-2 small" role="note">{{ demo_notice }}</div>{% endif %}
     <div class="container py-5 {% block container_class %}{% endblock %}">
         {% block content %}{% endblock %}
     </div>

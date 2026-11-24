@@ -24,6 +24,19 @@ A small, responsive Flask web app for managing student records, backed by SQLite
 
 Python 3, Flask, SQLite (`sqlite3`), Jinja2, Bootstrap 5, pytest
 
+## Live demo
+
+Live demo: (link added after first deploy)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/MAHESH21723/Student-Management-System)
+
+To host your own copy for free:
+
+1. Sign in to [Render](https://render.com) with GitHub.
+2. Click the **Deploy to Render** button above.
+3. Review the blueprint (`render.yaml`) and click **Apply**.
+
+Free-plan notes: the service sleeps after about 15 minutes idle, so the first request after a pause takes about a minute. The filesystem is ephemeral, so data (including the demo students) resets on every restart or redeploy. The demo sets `DEMO_DATA=1`, which shows a "public demo" banner. The app never needs a server or domain of your own, and local use is unchanged (see Setup below).
 ## Setup
 
 ```bash

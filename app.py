@@ -1,4 +1,4 @@
-"""StudentSpace - a small Flask + SQLite student record manager."""
+﻿"""StudentSpace - a small Flask + SQLite student record manager."""
 from __future__ import annotations
 
 import os
@@ -21,6 +21,7 @@ from flask import (
     session,
     url_for,
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response
 
 load_dotenv()
@@ -32,6 +33,23 @@ MAX_NAME_LENGTH = 100
 MAX_DEPARTMENT_LENGTH = 60
 MAX_SEARCH_LENGTH = 100
 MAX_STUDENT_ID = 2**53  # keeps ids safe for JSON/JS consumers
+
+DEMO_NOTICE = (
+    "Public demo: data is shared and resets, don't enter personal information."
+)
+
+# Obviously fictional records. The id column is numeric, so the DEMO-nnn label
+# is part of the name (ids 9001-9008).
+DEMO_STUDENTS = [
+    (9001, "DEMO-001 Test Student Alpha", "Demo Computer Science", 1, 8.1),
+    (9002, "DEMO-002 Test Student Beta", "Demo Computer Science", 2, 7.4),
+    (9003, "DEMO-003 Test Student Gamma", "Demo Mechanical", 3, 6.9),
+    (9004, "DEMO-004 Test Student Delta", "Demo Electronics", 4, 9.2),
+    (9005, "DEMO-005 Test Student Epsilon", "Demo Civil", 2, 7.8),
+    (9006, "DEMO-006 Test Student Zeta", "Demo Electronics", 1, 8.6),
+    (9007, "DEMO-007 Test Student Eta", "Demo Mechanical", 3, 7.1),
+    (9008, "DEMO-008 Test Student Theta", "Demo Civil", 4, 8.9),
+]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS students (
@@ -141,11 +159,22 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
+    if os.environ.get("RENDER"):
+        # Behind Render's HTTPS proxy: trust one hop of X-Forwarded-* headers.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
+        app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["DEMO_DATA"] = os.environ.get("DEMO_DATA") == "1"
     if test_config:
         app.config.update(test_config)
 
+    @app.context_processor
+    def inject_demo() -> dict[str, Any]:
+        return {"demo_mode": app.config["DEMO_DATA"], "demo_notice": DEMO_NOTICE}
+
     app.teardown_appcontext(close_db)
     init_db(app)
+    if app.config["DEMO_DATA"]:
+        seed_demo_data(app)
     register_csrf(app)
     register_routes(app)
     register_error_handlers(app)
@@ -168,8 +197,21 @@ def close_db(_exc: BaseException | None = None) -> None:
 
 def init_db(app: Flask) -> None:
     """Create the database file and schema if they do not exist."""
-    with sqlite3.connect(app.config["DATABASE"]) as conn:
+    Path(app.config["DATABASE"]).resolve().parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(app.config["DATABASE"], timeout=30) as conn:
         conn.execute(SCHEMA)
+
+
+def seed_demo_data(app: Flask) -> None:
+    """Insert obviously fictional students when the table is empty (demo mode)."""
+    with sqlite3.connect(app.config["DATABASE"], timeout=30) as conn:
+        if conn.execute("SELECT COUNT(*) FROM students").fetchone()[0] == 0:
+            # OR IGNORE: several gunicorn workers may seed at the same time.
+            conn.executemany(
+                "INSERT OR IGNORE INTO students (id, name, department, year, cgpa) "
+                "VALUES (?, ?, ?, ?, ?)",
+                DEMO_STUDENTS,
+            )
 
 
 # --------------------------------------------------------------------------
