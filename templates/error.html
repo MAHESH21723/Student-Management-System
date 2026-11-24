@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ error.code if error else 500 }} | StudentSpace{% endblock %}
+{% block container_class %}form-page{% endblock %}
+{% block content %}
+    <div class="glass-panel p-5 text-center">
+        <h1 class="h2 text-light">{{ error.code if error else 500 }} &ndash; {{ error.name if error else 'Server Error' }}</h1>
+        <p class="text-secondary">{{ error.description if error else 'Something went wrong on our side.' }}</p>
+        <a href="{{ url_for('index') }}" class="btn btn-premium">Back to dashboard</a>
+    </div>
+{% endblock %}

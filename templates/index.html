@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | StudentSpace{% endblock %}
+
+{% macro stat(label, value, icon, css='') %}
+    <div class="col-6 col-lg-3">
+        <div class="glass-panel stats-card {{ css }} h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="text-secondary small fw-medium mb-1">{{ label }}</p>
+                    <h2 class="h3 fw-bold mb-0 text-light">{{ value }}</h2>
+                </div>
+                <div class="stats-icon"><i class="bi {{ icon }}"></i></div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro sort_th(column, label, kind, width) %}
+    {% set next_dir = 'desc' if (sort_by == column and direction == 'asc') else 'asc' %}
+    <th scope="col" style="width: {{ width }}%;" aria-sort="{{ ('ascending' if direction == 'asc' else 'descending') if sort_by == column else 'none' }}">
+        <a href="{{ url_for('index', sort=column, direction=next_dir, search=search or None) }}" class="sort-link {% if sort_by == column %}active{% endif %}">
+            {{ label }}
+            {% if sort_by == column %}
+                <i class="bi bi-sort-{{ kind }}-{{ 'down' if direction == 'asc' else 'up' }}"></i>
+            {% else %}
+                <i class="bi bi-arrow-down-up text-muted small-icon"></i>
+            {% endif %}
+        </a>
+    </th>
+{% endmacro %}
+
+{% block content %}
+    <header class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-5 pb-3 border-bottom border-secondary-subtle">
+        <div class="d-flex align-items-center gap-3">
+            <div class="glass-panel brand-badge"><i class="bi bi-mortarboard-fill"></i></div>
+            <div>
+                <h1 class="h3 mb-0 brand-title">StudentSpace</h1>
+                <p class="text-secondary small mb-0">Academic record management</p>
+            </div>
+        </div>
+        <a href="{{ url_for('add_student') }}" class="btn btn-premium d-inline-flex align-items-center gap-2">
+            <i class="bi bi-plus-lg"></i> Add New Student
+        </a>
+    </header>
+
+    {% include "_flash.html" %}
+
+    <div class="row g-4 mb-5">
+        {{ stat('Total Students', total_students, 'bi-people-fill') }}
+        {{ stat('Average CGPA', avg_cgpa, 'bi-award-fill text-success', 'card-success') }}
+        {{ stat('Departments', dept_count, 'bi-building-fill-gear text-info', 'card-info') }}
+        {{ stat('Highest CGPA', max_cgpa, 'bi-star-fill text-danger', 'card-danger') }}
+    </div>
+
+    <div class="glass-panel p-4 mb-4">
+        <div class="row g-3 justify-content-between align-items-center">
+            <div class="col-12 col-md-6">
+                <form method="GET" action="{{ url_for('index') }}" class="search-group" role="search">
+                    <input type="hidden" name="sort" value="{{ sort_by }}">
+                    <input type="hidden" name="direction" value="{{ direction }}">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="search" name="search" class="form-control search-input" maxlength="100" placeholder="Search by name or student ID..." aria-label="Search students" value="{{ search }}">
+                    <button type="submit" class="btn btn-premium btn-search ms-2">Search</button>
+                </form>
+            </div>
+            <div class="col-12 col-md-auto d-flex align-items-center gap-3 justify-content-md-end">
+                {% if search %}
+                    <a href="{{ url_for('index', sort=sort_by, direction=direction) }}" class="badge bg-secondary text-decoration-none py-2 px-3">
+                        Filter: "{{ search }}" <i class="bi bi-x-lg ms-1"></i>
+                    </a>
+                {% endif %}
+                <span class="text-secondary small">Showing {{ students|length }} record{{ '' if students|length == 1 else 's' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel p-0 overflow-hidden shadow-lg">
+        <div class="table-responsive">
+            <table class="table custom-table align-middle">
+                <thead>
+                    <tr>
+                        {{ sort_th('id', 'Student ID', 'numeric', 15) }}
+                        {{ sort_th('name', 'Full Name', 'alpha', 25) }}
+                        {{ sort_th('department', 'Department', 'alpha', 20) }}
+                        {{ sort_th('year', 'Year', 'numeric', 15) }}
+                        {{ sort_th('cgpa', 'CGPA', 'numeric', 13) }}
+                        <th scope="col" class="text-end actions-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        <tr>
+                            <td class="fw-semibold text-light">{{ student.id }}</td>
+                            <td class="fw-medium text-light">{{ student.name }}</td>
+                            <td><span class="badge-dept">{{ student.department }}</span></td>
+                            <td><span class="badge-year">Year {{ student.year }}</span></td>
+                            <td><span class="badge-cgpa"><i class="bi bi-star-fill text-warning me-1 small-icon"></i>{{ '%.2f'|format(student.cgpa) }}</span></td>
+                            <td class="text-end actions-col">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-action btn-action-edit" title="Edit student" aria-label="Edit {{ student.name }}">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-action btn-action-delete"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            data-student-id="{{ student.id }}"
+                                            data-student-name="{{ student.name }}"
+                                            data-delete-url="{{ url_for('delete_student', student_id=student.id) }}"
+                                            title="Delete student" aria-label="Delete {{ student.name }}">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon"><i class="bi bi-folder-x"></i></div>
+                                    <h2 class="h5 text-light">No student records found</h2>
+                                    <p class="text-secondary small">
+                                        {% if search %}Try a different name or ID, or clear the filter.{% else %}Click "Add New Student" to create the first record.{% endif %}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="deleteModalLabel">Confirm delete</h2>
+                    <button type="button" class="btn-close modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Permanently delete this student record?</p>
+                    <div class="p-3 bg-dark bg-opacity-50 border border-secondary border-opacity-25 rounded-3 small">
+                        <div><span class="text-secondary">Name:</span> <strong id="deleteStudentName" class="text-light"></strong></div>
+                        <div><span class="text-secondary">ID:</span> <strong id="deleteStudentId" class="text-light"></strong></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" action="">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-premium bg-danger">Delete Student</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', (event) => {
+            const data = event.relatedTarget.dataset;
+            deleteModal.querySelector('#deleteStudentId').textContent = data.studentId;
+            deleteModal.querySelector('#deleteStudentName').textContent = data.studentName;
+            deleteModal.querySelector('#deleteForm').action = data.deleteUrl;
+        });
+    </script>
+{% endblock %}

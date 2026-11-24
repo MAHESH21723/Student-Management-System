@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Edit Student | StudentSpace{% endblock %}
+{% block container_class %}form-page{% endblock %}
+{% block content %}
+    <header class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-secondary-subtle">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('index') }}" class="btn btn-action btn-glass back-btn" title="Back to dashboard" aria-label="Back to dashboard">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h4 mb-0 font-heading text-light">Edit Student</h1>
+        </div>
+        <span class="text-secondary small">ID: {{ student.id }}</span>
+    </header>
+    {% include "_flash.html" %}
+    {% with values=student, action=url_for('edit_student', student_id=student.id), editing=True, submit_label='Save Changes' %}
+        {% include "_student_form.html" %}
+    {% endwith %}
+{% endblock %}

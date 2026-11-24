@@ -1,0 +1,64 @@
+{# Shared add/edit form. Expects: values (mapping), action (url), editing (bool), submit_label #}
+<div class="glass-panel p-4 shadow-lg">
+    <form method="POST" action="{{ action }}" novalidate>
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+            <label for="id" class="form-label">Student ID{% if editing %} (immutable){% endif %}</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi {% if editing %}bi-lock-fill{% else %}bi-hash{% endif %}"></i></span>
+                {% if editing %}
+                    <input type="text" id="id" class="form-control" value="{{ values.id }}" readonly disabled>
+                {% else %}
+                    <input type="number" name="id" id="id" class="form-control" min="1" placeholder="e.g. 101" required value="{{ values.id or '' }}">
+                {% endif %}
+            </div>
+            <div class="form-text text-secondary small">
+                {% if editing %}The identifier cannot be changed. Delete and re-add the record to use a different one.{% else %}Unique identifier. Duplicates are not allowed.{% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Student Name</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-person"></i></span>
+                <input type="text" name="name" id="name" class="form-control" maxlength="100" placeholder="e.g. Jane Doe" required value="{{ values.name or '' }}">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="department" class="form-label">Department</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-building"></i></span>
+                <input type="text" name="department" id="department" class="form-control" maxlength="60" placeholder="e.g. Computer Science" required value="{{ values.department or '' }}">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="year" class="form-label">Year of Study</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-calendar3"></i></span>
+                <select name="year" id="year" class="form-select" required>
+                    <option value="" disabled {% if not values.year %}selected{% endif %}>Select year...</option>
+                    {% for y in range(1, 5) %}
+                        <option value="{{ y }}" {% if values.year|string == y|string %}selected{% endif %}>Year {{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label for="cgpa" class="form-label">CGPA</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-speedometer2"></i></span>
+                <input type="number" name="cgpa" id="cgpa" class="form-control" placeholder="e.g. 8.1" step="0.01" min="0" max="10" required value="{{ values.cgpa if values.cgpa is not none else '' }}">
+            </div>
+            <div class="form-text text-secondary small">Scale from 0.00 to 10.00.</div>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-end">
+            <a href="{{ url_for('index') }}" class="btn btn-glass px-4">Cancel</a>
+            <button type="submit" class="btn btn-premium px-4"><i class="bi bi-check2-circle me-1"></i> {{ submit_label }}</button>
+        </div>
+    </form>
+</div>

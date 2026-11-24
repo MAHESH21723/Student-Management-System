@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Add Student | StudentSpace{% endblock %}
+{% block container_class %}form-page{% endblock %}
+{% block content %}
+    <header class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom border-secondary-subtle">
+        <a href="{{ url_for('index') }}" class="btn btn-action btn-glass back-btn" title="Back to dashboard" aria-label="Back to dashboard">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h4 mb-0 font-heading text-light">Add New Student</h1>
+    </header>
+    {% include "_flash.html" %}
+    {% with values=form_data, action=url_for('add_student'), editing=False, submit_label='Save Student' %}
+        {% include "_student_form.html" %}
+    {% endwith %}
+{% endblock %}
